@@ -1,0 +1,1521 @@
+#+Title: A Story On Functions(In JavaScript)
+#+Author: Francis Murillo
+#+Email: francisavmurillo@gmail.com
+#+Date: Apr. 14, 2016
+
+#+OPTIONS: reveal_control:t reveal_progress:nil reveal_history:nil reveal_center:t
+#+OPTIONS: reveal_slide_number:nil
+#+OPTIONS: reveal_rolling_links:nil reveal_keyboard:t reveal_overview:nil num:nil
+
+#+OPTIONS: reveal_width:1200 reveal_height:800
+#+OPTIONS: toc:nil
+
+#+OPTIONS: reveal_title_slide:nil
+#+OPTIONS: reveal_single_file:t
+
+#+REVEAL_HLEVEL:1
+
+#+REVEAL_MARGIN: 0.1
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2.5
+
+#+REVEAL_THEME: league
+#+REVEAL_TRANS: linear
+#+REVEAL_SPEED: fast
+
+#+REVEAL_HEAD_PREAMBLE: <meta name="description" content="A Story Of Functions(In JavaScript)">
+#+REVEAL_EXTRA_CSS:presentation.css
+
+* A Story On Functions
+  (In JavaScript)
+
+
+  By *Francis Murillo*
+
+
+  On *Jun. 17, 2016*
+
+
+  *francisavmurillo@gmail.com* / *Francis Murillo*
+
+* Things We Are Talking About
+
+  - *Functional Programming*
+  - JavaScript
+  - Functions
+  - Compose
+  - Curry
+  - Questions
+
+* My Story
+  I am a developer who didn't know anything about *JavaScript*. So I
+  read Douglas Crockford's awesome book *JavaScript: The Good Parts* and
+  there was light.
+
+  I came across a fork in a style: the *Object Oriented* road which has
+  been treaded till my hell or the *Functional* road less traveled
+  by. Like Robert Frost or a hipster, I chose *functions* over
+  *objects*.
+
+  I am baptized and must share the joy, so here we are.
+
+* What Is Functional Programming
+  I don't want to bore you with a definition but I can tell you this.
+
+  - (Almost)Everything is function ::
+       Everything you do or use is a function
+  - Combining functions ::
+       Functions can be combined to create more abstract behavior
+  - Avoid side effects ::
+       Mutating objects or variables are heavily discouraged
+
+  These three are the cornerstone of this paradigm which can be
+  expounded in more depth.
+
+* Why I Like Functional Programming
+
+  - Modularity ::
+       Function are like Lego blocks, I start with simple ones and
+       build one on top of the other.
+  - Perspective ::
+       Seeing more perspective gives me more solutions to work
+       with.
+  - Easier to reason and design ::
+       A single function pipeline is easier to work with than a many
+       actors passing messages. Oh also, *Immutability* and *Purity* help.
+  - Fun ::
+       The only metric I need
+
+* Why JavaScript
+  No reason really but JavaScript has *first class functions*
+  so... yeah. If you don't know what that means then you'll find out later.
+
+* Blah blah blah
+  Let's get into it.
+
+* Page 01: Functions
+  Mathematically, given some inputs, it returns an outputs.
+
+  #+BEGIN_SRC javascript
+    // Function Declaration
+    function add (x, y) {
+        return x + y;
+    }
+
+    // Function Expression
+    var multiply = function (x, y) {
+        return x * y
+    };
+
+    // Function Constructor - Avoid this like the plague
+    var increment = new Function('n', 'return n + 1');
+  #+END_SRC
+
+  I assume you know how to use this bad boys, we're just reviewing.
+
+** Function Declaration
+   Coming from Java this is how you might prefer to declare functions
+
+   #+BEGIN_SRC javascript
+     function sayMyName(name) {
+         return 'My name is ' + name;
+     }
+
+     sayMyName("Heisenberg");
+   #+END_SRC
+
+   This is okay to do if you aren't doing functional programming
+
+** Function Expression
+   The preferred way of declaring function, a little more verbose but is
+   much more flexible.
+
+   #+BEGIN_SRC javascript
+     var sayMyName = function _sayer(name) {
+         return 'My name is ' + name;
+     };
+
+     sayMyName('Heisenberg');
+   #+END_SRC
+
+   This form makes functions a variable which is what we are about to
+   talk about.
+
+** Function Constructor
+   Avoid using this as this is the equivalent of the evil =eval=.
+
+   #+BEGIN_SRC javascript
+     var sayMyName = new Function('name', "return 'Say my name ' + name");
+
+     sayMyName('Heisenberg');
+   #+END_SRC
+
+   I just mentioned this for posterity
+** Think It's Easy?
+   It is, let's step it up.
+
+* Idiom: (Almost)Everything Is A Function
+  In this paradigm, everything should be a function instead of a syntax
+  convention.
+
+  This is a good starting point to make our most basic of functions.
+
+** Getters and Setters
+   What do they look like in JavaScript
+
+   #+BEGIN_SRC javascript
+     var favoriteCharacter = { // A random object
+         name: 'Linus Van Pelt',
+         gender: 'Male',
+         inventory: ['Security Blanket']
+     };
+
+     // Getter
+     favoriteCharacter.name; // Using the dot notation
+     favoriteCharacter['gender']; // Using the brackent notation
+
+     // Setter
+     favoriteCharacter.sister = 'Lucy Van Pelt'; // Ditto here
+     favoriteCharacter['friend'] = 'Charlie Brown';
+
+     // Mention for =delete= who might be forgotten
+     delete favoriteCharacter.inventory;
+   #+END_SRC
+
+*** Functional Getter And Setters
+    So let's wrap the getter and setter operation as functions. This
+    form is slightly verbose but it will be clear later.
+
+    #+BEGIN_SRC javascript
+      var getter = function _doGet(emptyValue, key, object) {
+          if (object && object.hasOwnProperty(key)) {
+              return object[key];
+          } else {
+              return emptyValue;
+          }
+      };
+
+      var setter = function (key, value, object) {
+          if (object) {
+              object[key] = value;
+          }
+
+          return value;
+      };
+
+      var hero = {
+          name: 'Ogre Magi',
+          type: 'Intelligence'
+      };
+
+
+      getter('Anonymous', 'name', hero); // ::'Ogre Magi'
+      getter(0, 'baseHp', hero);  // :: 0
+
+      setter('baseHp', 550, hero); // :: hero
+    #+END_SRC
+
+** Mathematical Operations
+   How the basic math operators?
+
+   #+BEGIN_SRC javascript
+     1 + 2; // :: 3
+
+     2 * 3; // :: 6
+   #+END_SRC
+
+*** Functional Mathematical Operators
+    This should be easy to implement
+
+    #+BEGIN_SRC javascript
+      var add = function _addition(x, y) {
+          return x + y;
+      };
+
+      var multiply = function _multiplication(x, y) {
+          return x * y;
+      };
+
+
+      add(1, 2); // :: 3
+      multiply(2, 3); // :: 6
+    #+END_SRC
+
+** Boolean Operations
+   Finally, let's check them out for boolean operations.
+
+   #+BEGIN_SRC javascript
+     // NOTE: JavaScript types really suck, so just roll with this
+     1 === 0; // :: false
+     'True' !== 'False'; // :: true
+
+     1 <= 2; // :: true
+     1 >= 2; // :: false
+
+     !'Nullify'; // :: false
+     !!''; // :: false
+   #+END_SRC
+
+*** Functional Boolean Operators
+    Simple enough
+
+    #+BEGIN_SRC javascript
+      var equals = function _equals(x, y) { return x === y; },
+          notEquals = function _notEquals(x, y) { return x !== y;};
+
+      var not = function _not(x) { return !x; };
+
+      var lessThan = function _lessThan(x, y) { return x < y; },
+          moreThan = function _moreThan(x, y) { return x > y;};
+
+      var lessThanOrEquals = function _lessThan(x, y) { return x <= y; },
+          moreThanOrEquals = function _moreThan(x, y) { return x >= y; };
+
+
+      equals(true, false);
+      not(1);
+
+      not(not(1));
+
+      lessThanOrEquals(1, 2);
+    #+END_SRC
+
+** So What If They Are
+   Now we can start with these basic functions as building blocks when
+   we start composing.
+
+   I do admit it is a little more verbose but the pay of is long
+   term. Let's move on to something more functional
+
+* Page 02: Invoking Functions Functionally
+  Before moving, we should learn how to call invoke functions.
+
+  #+BEGIN_SRC javascript
+    var getFullName = function _getFullName(firstName, lastName) {
+        return lastName + ', ' + firstName;
+    };
+
+    var firstName = 'Bruce',
+        lastName = 'Wayne';
+
+    // The default invokation, no frills here
+    getFullName(firstName, lastName);
+
+    // Invoking a function using the =call= method
+    getFullName.call(null, firstName, lastName);
+
+    // Invoking a function with array of arguments
+    getFullName.apply(null, [firstName, lastName]);
+  #+END_SRC
+
+** Call Method
+   Given a function *f*, you can invoke it with a list of arguments
+   using the *call* method.
+
+   #+BEGIN_SRC javascript
+     var sum = function _addTriple(x, y, z) { return x + y + z; };
+
+     // NOTE: Do notice the first parameter is null and the rest are the real arguments
+     sum.call(null, 1, 2, 3); // :: 6
+     sum.call(null, 4, 3, 0); // :: 7
+
+
+     var double = function _double(n) { return n * 2; };
+
+     double.call(null, 1); // :: 2
+     double.call(null, 2); // :: 4
+   #+END_SRC
+
+** Apply Method
+   This is like *call* but this time it takes an array of values. Let's
+   do the previous one with *apply*
+
+   #+BEGIN_SRC javascript
+     var sum = function _addTriple(x, y, z) { return x + y + z; };
+
+     // NOTE: Again the first parameter is null, we'll get to that
+     sum.apply(null, [1, 2, 3]); // :: 6
+     sum.apply(null, [4, 3, 0]); // :: 7
+
+
+     var double = function _double(n) { return n * 2; };
+
+     double.apply(null, [1]); // :: 2
+     double.apply(null, [2]); // :: 4
+   #+END_SRC
+
+** *this* Variable
+   You might have noticed the *null* first parameter, this is setting
+   the *this* variable within the scope of the function. This is more
+   useful for *OOP* with classes and objects.
+
+   #+BEGIN_SRC javascript
+     var Animal = {
+         makeSound: function _makeSound() {
+             var self = this; // Notice is *this* is not defined anywhere
+
+             if (!this.type) { // If the animal has no type, throw an error
+                 throw "Animal must have a type";
+             } else if (this.type === 'Cat') {
+                 return 'Meow';
+             } else if (this.type === 'Duck') {
+                 return 'Quack';
+             }
+         }
+     };
+
+     // Animal.makeSound(); // :: error "Animal must have a type";
+
+     Animal.type = 'Duck';
+     Animal.makeSound(); // :: 'Quack'
+
+     Animal.makeSound.call({ type: 'Cat'}); // :: Meow
+   #+END_SRC
+
+** Avoiding *this*
+   Since our focus is invoking functions, we don't really have to
+   concern ourselves with the complication of *this*. Imagine a world
+   without classes or instance variables or methods, it is a world of
+   functions on data.
+
+   For our discussion, either I set the first parameter as *null* or
+   *this* when it is inside a function.
+
+* Page 03: Function Arguments
+  Aside from *this*, there is another variable which is important to
+  join functions together. That is the *arguments* variable which
+  contains(you guessed it), the arguments passed in a function.
+
+  #+BEGIN_SRC javascript
+    var myFunction = function (/* args */) { // Nice convention when using arguments variable
+        var args = arguments; // Make it explicit rather than implicit
+
+        return args; // Just return what was passed
+    };
+
+
+    myFunction(0, false, 'Derp'); // :: [0, false, 'Derp']
+    myFunction(true); // :: [true]
+
+    myFunction() // :: []
+  #+END_SRC
+
+  Easy? Well, JavaScript made a error with this variable.
+
+** Gotcha: *arguments* is an object
+   Namely, making that variable an object, instead of a list.
+
+   #+BEGIN_SRC javascript
+     var myOtherFunction = function (/* args */) { // I like this convention
+         var argObject = arguments;
+
+         // Now we have to do this when we want it as a list
+         var argList = [].slice.call(arguments);
+
+         return argList;
+     };
+
+     // Compare with the output of myFunction
+     myFunction(0, false, 'Derp');
+     myOtherFunction(0, false, 'Derp');
+   #+END_SRC
+
+   This is important when we want to manipulate function
+   arguments.
+
+** Convention
+   When you want to use *arguments*, my suggested convention is like the
+   one above or the template below.
+
+   #+BEGIN_SRC javascript
+     // Put a comment in the parameter section to indicate it's usage
+     var theArgumentFunction = function (/* argumentsName */) {
+         // First line is the variable name of =arguments=, as named above in the parameters
+         var argumentsName = arguments;
+
+         // var argumentsName = [].slice.call(arguments); // If you are going to do something with it.
+
+         // Code goes here
+     };
+   #+END_SRC
+
+   It is easier to know if the function accepts variable number of
+   arguments or that it does something to it.
+
+** Type Checking Arguments
+   What if we want make sure a function which takes integers gets
+   integers? We can have a mock type checker using *arguments*.
+
+   #+BEGIN_SRC javascript
+     var isNumber = function (rawValue) {
+         if (typeof rawValue !== 'number') { // Thorw a type error like in Java
+             throw (typeof rawValue) + "<" + rawValue + ">" +  " is not a number"
+         }
+     };
+
+     var typeCheckAllArgs = function (typeChecker, f) {
+         return function _argParser(/* args */) {
+             var args = [].slice.call(arguments);
+
+             args.forEach(typeChecker); // For loop through each argument and check the type
+
+             return f.apply(this, args);
+         };
+     };
+
+     var add = function (x, y) { return x + y; },
+     typeCheckedAdd = typeCheckAllArgs(isNumber, add);
+
+     add("5", "2"); // :: '52'
+     // typeCheckedAdd("5", "2"); // :: error "5 is not a integer"
+
+     typeCheckedAdd(5, 2); // :: 7
+   #+END_SRC
+
+** Variable Argument Function
+   With the *arguments* variable, we can implement variable argument functions.
+
+   #+BEGIN_SRC javascript
+     var sum = function _varArgSum(/* numbers */) {
+         var numbers = [].slice.call(arguments);
+
+         // I chose this implementation for it's brevity, for looping also works
+         var add = function (x, y) { return x + y; };
+
+         return numbers.reduce(add, 0);
+     };
+
+     sum(1, 2, 3); // :: 6
+     sum(1, 2, 3, 4, 5, 6, 7, 8, 9, 10); // :: 55
+   #+END_SRC
+
+* What We've Talked About So Far
+
+  - Functions ::
+       You should know this
+  - f.call ::
+       Calling a function with arguments, like the way we always do
+  - f.apply ::
+       Calling a function with a list of arguments
+  - arguments ::
+       A pseudo-list of arguments passed to a function
+
+  This is all you need to get started with the core of functional programming.
+
+* Still Easy?
+  If anything is not clear, now is the time to ask.
+
+* Idiom: First Class Functions
+  What allows JavaScript to be functional is that functions can be
+  passed around like variables, this is what first class functions are
+  which we already been taking advantage of.
+
+  #+BEGIN_SRC javascript
+    var firstClassFunction = function _() { return 'Something'; };
+
+    var functionVariable = firstClassFunction; // Variable functions
+  #+END_SRC
+
+  There is something implied here which is the hardest to grasp when
+  doing functional programming.
+
+** Returning Functions
+   Functions can output or return functions. A subtle but powerful
+   fact, contrast this with other languages such as *Java*, *VB* or *Smalltalk*.
+
+   #+BEGIN_SRC javascript
+     // A function that returns a function
+     var incrementer = function _startAt(start) {
+         var counter = start || 0;
+
+         return function _increment() { // Returns a function
+             counter = counter + 1;
+
+             return counter;
+         };
+     };
+
+     var countFromThree = incrementer(3);
+
+     // Goes up for each invokation, you can make a infinite sequence with this
+     countFromThree(); // :: 4
+     countFromThree(); // :: 5
+     countFromThree(); // :: 6
+   #+END_SRC
+
+   This is really no different from returning an object. So get
+   used to or think about it.
+
+** Taking And Giving Functions
+   This leads us to one of the cornerstone of functional programming
+
+* Cornerstone: Functions As Units Of Behavior
+  Every function has one defined purpose. Simple and vague but this is
+  what some of our best practices ascribe.
+
+  This is where it gets epic, so I'll take you through some use cases so
+  you can understand this.
+
+* Use Case: Logging
+  Common use case is to log a function execution. Whether if it is for
+  debugging or logging purposes, this is a good exercise for combining
+  functions.
+
+  #+BEGIN_SRC javascript
+    var save = function (entity) {
+        // Do some ajax call, local storate or what have you
+
+        /* Some hypothetical newly saved object */
+        return {
+            id: 42,
+            /* ... */
+        };
+    };
+  #+END_SRC
+
+  Assuming you have this save operation, what if you want to know when
+  the function was called?
+
+** Quick Fix
+   Here is a probable fix you might try
+
+   #+BEGIN_SRC javascript
+     var save = function (entity) {
+         console.log('Save was called');
+
+         // Do some ajax call, local storate or what have you
+
+         /* Some hypothetical newly saved object */
+         return {
+             id: 42,
+             /* ... */
+         };
+     };
+   #+END_SRC
+
+   Well, what if you couldn't touch the function because it comes from a
+   vendor or plugin?
+
+** Thinking
+   If the fix above works, it would be a bad form of tangling. We have
+   the original function which does the job now is interrupted with the
+   logging purpose. This violates the fact that functions should do one
+   thing or what they are just supposed to do.
+
+   So we have two functions: saving and logging. Here comes our first
+   case of *decorating functions*.
+
+** Decorator
+   So let's make our first decorator function. Get ready.
+
+   #+BEGIN_SRC javascript
+     var logIt = function _decorator(message, loggedFunction)  {
+         // Here we return a wrapped function
+         return function _decoratedFunction(/* args */)  {
+             var args = arguments;
+
+             console.log(message || 'Function was called');
+
+             return loggedFunction.apply(this, args);
+         };
+     };
+   #+END_SRC
+
+   Short and precise, did you think it was hard? Let's see it in action.
+
+** Application
+   It just as simple as calling the functions.
+
+   #+BEGIN_SRC javascript
+     var save = function (entity) { // Function from above
+         return {
+         };
+     };
+
+     var loggedSave = logIt('Save was called', save);
+
+     loggedSave({
+         name: 'Snoopy'
+     });
+   #+END_SRC
+
+   And there you have it, we have separated our logging intention from
+   our save intention without touching it. How cool is that? What we
+   just did was make an *higher order function*.
+
+* Page 04: Higher Order Functions
+  Functions that take functions that return functions. Basically, adding
+  two functions gives you a new function just like addition.
+
+  If we treat functions as behaviors, we can add behaviors together to
+  make new behaviors. Fascinating.
+
+  From our previous example, did you notice how short it was to combine
+  the function. I want to emphasize combining functions or writing there
+  glue isn't that long or hard. It is a matter of discipline.
+
+  Let's move on to another use case.
+
+* Use Case: Throttling
+  Let's say we have a button click handler.
+
+  #+BEGIN_SRC javascript
+    var onClick = function _buttonHandler(event) {
+        // Do something with the event, use your imagination
+
+        return 'Button was clicked';
+    };
+  #+END_SRC
+
+  Now what if this was a buy operation or a save operation and what if
+  the user's mouse is double clicking by itself. Click twice, buy
+  twice. Dangerous.
+
+  How do we prevent this? We can add a timeout before clicking again or
+  to throttle it say click after 500 milliseconds.
+
+** Quick Fix
+   The code to throttle this is a little harder.
+
+   #+BEGIN_SRC javascript
+     var isThrottled = false,
+         throttlePeriod = 500;
+
+     var onClick = function _buttonHandler(event) {
+         if (!isThrottled) {
+             isThrottled = true;
+
+             setTimeout(function _releaseThrottling() {
+                 isThrottled = false;
+             }, throttlePeriod);
+
+             // Do something with the event, use your imagination
+
+             return 'Button was clicked';
+         } else {
+             return; // Do nothing when it is throttled
+         }
+     };
+   #+END_SRC
+
+   The fix just makes the original handler just dirtier by adding it,
+   yuck. Same concept, how do we separate concerns? We *decorate it*.
+
+** Idea / Refactor
+   Let's create a function that throttles another function
+
+   #+BEGIN_SRC javascript
+     var throttle = function _throttler (delay, throttled) {
+         var isThrottled = false,
+             throttlePeriod = delay;
+
+         return function _throttledFunction(/* args */) {
+             var args = arguments;
+
+             if (!isThrottled) {
+                 isThrottled = true;
+
+                 setTimeout(function _releaseThrottling() {
+                     isThrottled = false;
+                 }, throttlePeriod);
+
+                 return throttled.apply(this, args);
+             } else {
+                 return; // Do nothing when it is throttled
+             }
+         };
+     };
+   #+END_SRC
+
+   Did you see it? We just refactored the previously dirty function and
+   extracted the throttling function. Refactoring is a good habit as it
+   separated the behaviors.
+
+** Application
+   Let's see it in action.
+
+   #+BEGIN_SRC javascript
+     // Original
+     onClick(); // :: 'Button was clicked'
+     onClick(); // :: 'Button was clicked'
+
+     // Let's increase the throttling period for effect
+     var throttledOnClick = throttle(2500, onClick);
+
+     // Throttled - Cue demo
+     throttledOnClick(); // :: 'Button was clicked'
+     throttledOnClick(); // :: undefined
+   #+END_SRC
+
+   Cool, we made the code way cleaner and got ourself another
+   function. Refactoring good.
+
+   But this are just abstract behaviors. How about some real behaviors?
+   Let's move on.
+
+* Use Case: Conditional Invokation
+  What if you have an action or event but only want to trigger if a
+  certain condition is met.
+
+  #+BEGIN_SRC javascript
+    var gotoHomePage  = function (/* args */) {
+        return 'Went to the home page'; // Just imagine something here
+    };
+
+    var isAuthenticated = function (/* args */) {
+        return true; // Well
+    };
+  #+END_SRC
+
+  So you know the spiel. How do we combine them? Our objective is to
+  trigger *gotoHomePage* only if *isAuthenticated* returns positive.
+
+** Quick Fix
+   You know what I'm going to do. Just plug it in outright.
+
+   #+BEGIN_SRC javascript
+     var gotoHomePage = function (/* args */) {
+         var args = arguments;
+
+         var allowExecution = isAuthenticated.apply(this, args);
+
+         if (allowExecution === true) {
+             return 'Went to the home page';
+         } else {
+             return; // Again do nothing
+         }
+     };
+   #+END_SRC
+
+   Again, we refactor.
+
+** Refactor
+   What we need is a function that executes if the conditional function
+   is true.
+
+   #+BEGIN_SRC javascript
+     // Again, simple refactoring
+     var doIf = function _callIf(condition, executor) {
+         return function _conditionalCall(/* args */) {
+             var args = arguments;
+
+             var allowExecution = condition.apply(this, args);
+
+             if (allowExecution === true) {
+                 return executor.apply(this, args);
+             } else {
+                 return;
+             }
+         };
+     };
+   #+END_SRC
+
+   This time we take two functions and depends on the value of the first
+   which is something we'll see more later on.
+
+** First Application
+   No surprise here
+
+   #+BEGIN_SRC javascript
+     var authenticatedGotoPage = doIf(isAuthenticated, gotoHomePage);
+   #+END_SRC
+
+   It's rather flat to look at but the point still holds. But there is
+   something we can do to make it even more appeasing.
+
+** Second Application
+   So what if there is another condition? Say what if we want the
+   function to proceed if the server is up? (I'm running out of
+   imagination.) Let's reuse our functions in a creative way.
+
+   #+BEGIN_SRC javascript
+     // Previous declaration
+     var authenticatedGotoPage = doIf(isAuthenticated, gotoHomePage);
+
+     // Might be asynchronous but bear with me
+     var cachedStatus = false; // Say there is a ping every second and saved in a variable
+
+     var isServerUp = function () {
+         return cachedStatus === true;
+     };
+
+     // Awesome reuse
+     var authenticatedAndActiveGotoPage = doIf(isServerUp, authenticatedGotoPage);
+   #+END_SRC
+
+   So for every new condition we can just keep wrapping it, pretty
+   powerful. Overall, we now combined concrete behaviors to produce new
+   ones.
+
+* Checkpoint
+  So I hope you got the point.
+
+  - Functions should only do what they're supposed to do
+  - Combine functions or behaviors
+  - Refactor
+  - Imagine
+
+  So any question before moving on?
+
+* Idiom: Function Pipeline
+  Since everything is a function, we need better tools of combining
+  them. Let's see this in action.
+
+  #+BEGIN_SRC javascript
+    // Let's see if we can copy this
+    var operation = function (n) {
+        return 2 * n + 1;
+    };
+
+    operation(4); // :: 9
+
+    var increment = function (n) { return n + 1; },
+        multiplyByTwo = function (n) { return n * 2; };
+
+    // Chaining the functions together
+    increment(multiplyByTwo(5)); // :: 9
+  #+END_SRC
+
+  What we did here is make a function pipeline with the two smaller
+  functions to emulate the first one. Let's delve deeper.
+
+** Stringing Functions Together
+   Let's ante up with text functions. When I mean text, I mean
+   strings. String is weirdly named.
+
+   #+BEGIN_SRC javascript
+     // Just wrapping methods into functions
+     var toText = function (value) { return value.toString(); },
+         toUpperCase = function (text) { return text.toUpperCase() },
+         length = function (text) { return text.length; };
+
+     var theNumber = 42;
+
+     // Let's chain them
+     // toText -> toUpperCase -> length
+
+     // Paren over paren over paren, yuck
+     length(toUpperCase(toText(theNumber))); // :: 2
+
+     // Why not just?
+     theNumber
+         .toString()
+         .toUpperCase()
+         .length;
+   #+END_SRC
+
+   Obviously, something is wrong. The object method chain looks prettier
+   than the functional equivalent. But we're not just looking at
+   aesthetics.
+
+** Composing Functions
+   Let's create an hypothetical chain for a form entity.
+
+   #+BEGIN_SRC javascript
+     // Pay attention to the name
+     var removeEmptyFields = function (entity) { return entity; },
+         upperCaseTextFields = function (entity) { return entity; },
+         serializeToJson = function (entity) { return JSON.stringify(entity); };
+
+     // Pretend form value
+     var formValues = {
+         name: 'SUSHI',
+         gender: 'MALE',
+         cuteness: 0.80
+     };
+
+     // Chaining order
+     // removeEmptyFields -> upperCaseTextFields -> serializeToJson
+     serializeToJson(upperCaseTextFields(removeEmptyFields(formValues)));
+
+     // Rather what we need is not a chain but a behavior
+     var processFormValues = function (formEntity) {
+         return serializeToJson(upperCaseTextFields(removeEmptyFields(formEntity)));
+     };
+
+     // This is what we are actually looking for
+     processFormValues(formValues);
+   #+END_SRC
+
+   What we want here is a tool to create function pipelines. We don't
+   want the nesting parenthesis, what we want is the sum of it.
+
+* Page 05: Function Composition
+  Let's keep it simple and see how we can tie two functions together.
+
+  #+BEGIN_SRC javascript
+    // Again, imagine it is some big function or whatnot
+    var f = function (/* args */) { return "inner"; },
+        g = function (/* args */) { return "outer"; };
+
+    // How do we clean this up?
+    g(f(1, 2, 3)); // Some value
+
+    // We can try this
+    var fAndg = function (/* args */) {
+        var args = [].slice.call(arguments);
+
+        var fValue = f.apply(this, args);
+
+        var gValue = g.call(this, fValue);
+
+        return gValue;
+    };
+
+    // Looks cleaner
+    fAndg(1, 2, 3); // Same value
+  #+END_SRC
+
+  Let's refactor *fAndg*, this is where it begins.
+
+** Defining Function Composition
+   What we are defining is function composition for two functions. Two
+   is a good number.
+
+   #+BEGIN_SRC javascript
+     var compose = function _composer(outer, inner) {
+         return function _composedFunction (/* args */) {
+             var args = [].slice.call(arguments);
+
+             var innerValue = inner.apply(this, args);
+
+             var outerValue = outer.call(this, innerValue);
+
+             return outerValue;
+         };
+     };
+   #+END_SRC
+
+   Notice how short and easy to write this. But some examples would
+   improve our comprehension
+
+** Using *compose*
+   Show time
+
+   #+BEGIN_SRC javascript
+     // Start with two
+     var increment = function (n) { return n + 1; },
+         triple = function (n) { return n * 3; };
+
+     // Remember read from the end to the beginning
+     var incrementThenTriple = compose(triple, increment),
+         incrementTwice = compose(increment, increment),
+         multipleByNine = compose(triple, triple);
+
+     // Too easy? let's use lists
+     var first = function (xs) { return xs[0]; },
+         rest = function (xs) { return xs.slice(1); },
+         reverse = function (xs) { return xs.reverse(); };
+
+     var second = compose(first, rest),
+         last = compose(first, reverse),
+         dropTwo = compose(rest, rest),
+         same = compose(reverse, reverse);
+   #+END_SRC
+
+   Remember these are just simple functions and we are just combining them.
+
+** Defining *pipe*
+   With *compose*, you have to read from right to left, which is a
+   little awkward. I prefer to read left to right like a proper English
+   gentleman.
+
+   So I introduce a left to right version of it known as *pipe*, taken
+   from Linux shell piping.
+
+   #+BEGIN_SRC javascript
+     var pipe = function (inner, outer) { // Notice the reversed naming
+         return compose(outer, inner);
+     };
+
+     var prependNamespace = function (symbolName) { return 'fn/' + symbolName; },
+         appendParens = function (symbolName) { return prependNamespace + '()'; };
+
+
+     var mySymbol = 'mySymbol';
+
+     appendParens(prependNamespace(mySymbol)); // :: fn/mySymbol()
+
+     var processSymbolWithPipe = pipe(prependNamespace, appendParens), // Now left to right
+         processSymbolWithCompose = compose(appendParens, prependNamespace); // Default right to left
+
+     // Same answers as above
+     processSymbolWithPipe(mySymbol);
+     processSymbolWithCompose(mySymbol);
+   #+END_SRC
+
+** The Bigger Picture
+   Now that we have the tool for chaining functions together, namely the
+   two function version of *compose* and *pipe*, we can create the
+   variable function version of it.
+
+   I want to emphasize this function pipeline or functional data
+   flow. When we link several functions together, here is the flow.
+
+   - The first function takes all the arguments of the invokation
+   - The next function takes the previous return value as its arguments
+   - The last function returns the value for the pipeline.
+
+   This is emphasizes how functional programming does its data flow: a
+   straight line of functions that transform input from one to the other.
+
+* Page 06: Composition
+  The implementation of variable argument composition is up to you. I
+  won't force this implementation on you but this is how I implemented
+  it. I dub thee *composes* (with an s).
+
+  #+BEGIN_SRC javascript
+    var composes = function _multiComposer(/* fns */) {
+        var fns = [].slice.call(arguments);
+
+        if (fns.length === 0) {
+            throw "No function to compose"
+        } else if (fns.length === 1) {
+            return fns[0]; // Same function
+        } else {
+            var reversedFns = fns.reverse(),
+                otherFns = reversedFns.slice(1),
+                firstFn = reversedFns[0];
+
+            return otherFns.reduce(pipe, firstFn);
+        }
+    };
+  #+END_SRC
+
+  One of two snippets I won't really discuss, trust me on this that this
+  composes multiple functions together.
+
+** Pipes
+   Let's implement it for the also multiple functions. It's just as
+   simple as reversing the arguments for *compose*.
+
+   #+BEGIN_SRC javascript
+     var pipes = function _reversedCompose(/* fns */) {
+         var fns = [].slice.call(arguments);
+
+         var reversedFns = fns.reverse();
+
+         return composes.apply(this, reversedFns);
+     };
+   #+END_SRC
+
+   Which makes sense if we want to read in the opposite direction
+
+* Reflection
+  So here it is, the mighty *composes* is implemented. Let's just run to
+  two examples.
+
+** Unchained Methodology
+   Let's see what composition looks like against method chaining.
+
+   #+BEGIN_SRC javascript
+     var myWords = "The quick brown fox jumps over the head of the lazy dog.";
+
+     // Let's count the number of words
+     myWords
+         .split(' ')
+         .length;
+
+     // Then let's compare this with the functional style
+     var splitByWord = function (text) { return text.split(' '); },
+         length = function (xs) { return xs.length; };
+
+     var countWords = composes(length, splitByWord);
+
+     // So how does this compare?
+     countWords(myWords);
+   #+END_SRC
+
+   Still a little more verbose. But this will make more sense if you had
+   *currying* which we discuss later on.
+
+   What I will say is that with this functional version, you get a
+   function that does what it says, count the number of words.
+
+** Hiding If
+   Let's use function composition to hide an if condition.
+
+   #+BEGIN_SRC javascript
+     var mapIf = function (predicate, mapper) {
+         return function (value) { // This time it's is a single argument
+             var ifValue = predicate.call(this, value);
+
+             return ifValue === true ? mapper.call(this, value) : value;
+         };
+     };
+
+     var tooLongName = function (username) { return username.length > 10; },
+         toLowerCase = function (text) { return text.toLowerCase(); },
+         escapeHtml = function (text) { return text; }, // The regexp might be too long, imagine
+         truncateName = function (username) { return username.slice(0, 10); };
+
+     var myUsername = "CharlieBrowniest";
+
+     var displayName = composes( // A nice convention when composing functions
+         escapeHtml,
+         mapIf(tooLongName, truncateName),
+         toLowerCase
+     );
+
+     displayName(myUsername); // :: charliebro
+   #+END_SRC
+
+   Is there an (explicit) if statement lying around? This is where
+   functional programming can help: reduce nested logic.
+
+* Timeout
+  Anyone need a break before moving on to *curry*? Or we can stop here.
+* Idiom: Partial Application
+  Sometimes there is a redundancy or duplication. Take for example
+  adding prefixes.
+
+  #+BEGIN_SRC javascript
+    // Redefined for text
+    var concat = function (x, y) {return x + y; };
+
+    // Notice the redundancy here
+    var prefixMr = function (name) { return concat('Mr.', name); },
+        prefixMrs = function (name) { return concat('Mrs.', name); };
+
+
+    prefixMr('Apevosfe');
+    prefixMrs('Senapvf')
+  #+END_SRC
+
+  Certainly there is a pattern here. What if *concat* could be just
+  *prefilled* or *preset* with the first argument and execute it once it
+  gets its last argument.
+
+** Presetting Two Arguments
+   Let's implement that idea for two arguments
+
+   #+BEGIN_SRC javascript
+     var presetFirstArg = function _presetFirstArgs(f, firstArg) {
+         return function _waitingForSecondArg(secondArg) {
+             return f.call(this, firstArg, secondArg);
+         };
+     };
+
+     var concat = function (x, y) { return x + y; };
+
+     var prefixMr = presetFirstArg(concat, 'Mr'),
+         prefixMrs = presetFirstArg(concat, 'Mrs.');
+   #+END_SRC
+
+   We definitely have some improvement here. But what if want to do it
+   with three arguments?
+
+** Presetting Three Arguments
+   Let's do this again but this time with names.
+
+   #+BEGIN_SRC javascript
+     // Looks like a pyramid
+     var presetTwoArgs = function _presetFirstArg(f, firstArg) {
+         return function _waitingForSecondArg(secondArg) {
+             return function _waitingForThirdArg(thirdArg) {
+                 return f.call(this, firstArg, secondArg, thirdArg);
+             };
+         };
+     };
+
+     var fullName = function (firstName, middleName, lastName) {
+         return lastName + ', ' + firstName + ' ' + middleName;
+     };
+
+     // Preset the arguments
+     var johnWho = presetTwoArgs(fullName, 'John');
+
+     var johnMichaelWho = johnWho('Michael');
+
+     johnMichaelWho('Vincent'); // :: "John Michael Vincent"
+     johnMichaelWho('Allan'); // :: "John Michael Allan"
+   #+END_SRC
+
+   Pretty impressive if you ask me. But how about for four or more
+   arguments? Do we keep doing this and it doesn't look pretty?
+
+** Another Big Picture
+   What we want our functions to do is to store the parameters until it
+   has enough to execute the function. It's like charging up batteries
+   or arguments.
+
+   And what we achieved in doing that is creating new functions from old
+   ones just by presetting there parameters. This function behavior is
+   known as *currying*, thanks to Haskell Curry.
+* Page 07: Function Currying
+  This is the last snippet I won't expect you to understand. It is a
+  challenge to implement currying in your own way, this is how I found
+  it by myself.
+
+  #+BEGIN_SRC javascript
+    var curry = function (f) {
+        var self = this,
+            argumentLength = f.length;
+
+        // Using a helper function
+        var currier = function _recursiveCurrier(oldArgs) {
+            return function _recursiveCurry(/* newArgs */) {
+                var newArgs = [].slice.call(arguments),
+                    curArgs = oldArgs.concat(newArgs);
+
+                if (curArgs.length < argumentLength) { // Check if there is enough parameters
+                    return currier(curArgs); // Keep returning a function until then
+                } else {
+                    return f.apply(self, curArgs);; // Execute when there is enough
+                }
+            };
+        };
+
+        return currier([]);
+    };
+  #+END_SRC
+
+  The main idea is to keep returning a function until enough arguments
+  has been supplied.
+
+** Revisiting Our Old Friends
+   Remember our old friends *getter* and *setter* which takes three
+   arguments? I set it up that way so it can be curried.
+
+   #+BEGIN_SRC javascript
+     var getId = curry(getter)(0, 'id'),
+         getDescription = curry(getter)('', 'description'),
+         setEmptyDescription = curry(setter)('description', 'N/A');
+
+     var ps4 = { id: 100, name: 'PlayStation Portable'},
+         ds = {name: 'Nintendo DS', description: 'Infidel Handheld'};
+
+     getId(ps4); // :: 100
+     getId(ds); // :: 0
+
+     getDescription(ps4); // :: ''
+     getDescription(ds); // :: 'Infidel Handheld'
+
+     setEmptyDescription(ps4);
+     getDescription(ps4); // :: 'N/A'
+   #+END_SRC
+
+   Does it look boring or more complicated? Wait until we compose the
+   getters and setters.
+
+** Curried Booleans
+   How about our other friends, *equals*?
+
+   #+BEGIN_SRC javascript
+     var isZero = curry(equals)(0),
+         isNull = curry(equals)(null);
+
+     isZero(10); // :: false
+     isZero(0); // :: true
+
+     isNull(10); // :: false
+
+     var isNotZero = composes(not, isZero);
+
+     isNotZero(10); // :: true
+     isNotZero(0); // :: false
+   #+END_SRC
+
+   Did you see any declared function expressions? Epic.
+
+** But Where Does This Fit In?
+   In a function pipeline, the return value is passed through each one
+   which implies that the piped function must be of one argument. This
+   is where *curry* fits in.
+
+   You preset arguments for piped functions so that one argument remains
+   so that it passes through perfectly.
+
+   Either way, *currying* is a great way to derive new functions from
+   old just by presetting arguments.
+* Combined Use Cases
+  So now that we have the two cornerstone functions, curry and compose;
+  let's have some fun with it. This is where it gets even crazier.
+
+  You don't have to understand this completely but just the use
+  cases.
+
+  #+BEGIN_SRC javascript
+    var people = [
+        {name: 'Alice', gender: 'Female', source: 'Dilbert', salary: 100, starred: true},
+        {name: 'Dilbert', gender: 'Male', source: 'Dilbert', salary: 120 },
+
+        {name: 'Bruce Wayne', gender: 'Male', source: 'DC', starred: true},
+        {name: 'Selina Kyle', gender: 'Female', source: 'DC'},
+
+        {name: 'Master Chief', gender: 'Male', source:'Video Game'},
+        {name: 'Doom Guy', gender: 'Male', source: 'Video Game', starred: true},
+        {name: 'Samus', gender: 'Female', source: 'Video Game'}
+    ];
+  #+END_SRC
+
+  Here is a simple list of people we can use.
+
+** Map
+   Every list has a method *map* that takes a one argument function. Sound
+   similar? Let's get their names?
+
+   - map ::
+        A list method that takes a mapping function and returns a new
+        list that applies the function to each one.
+
+   #+BEGIN_SRC javascript
+     var getName = curry(getter)('', 'name'),
+         getSalary =curry(getter)(0, 'salary');
+
+     people.map(getName); // :: ["Alice", "Dilbert", "Bruce Wayne", ...
+
+     people.map(getSalary) // :: [100, 120, 0, ... ]
+
+     // What if we want an total, no need to understand
+     people
+         .map(getSalary)
+         .reduce(add, 0); // 240
+   #+END_SRC
+
+** Filter
+   Ditto with filter
+
+   - filter ::
+        A list method that takes a predicate function and returns a new
+        list where every element satisfies the predicate
+
+   #+BEGIN_SRC javascript
+     var isFemale = curry(equals)('Female'),
+         isMale = curry(equals)('Male'),
+         getGender = curry(getter)('', 'gender');
+
+     // Notice we composed
+     var isFemalePerson = compose(isFemale, getGender),
+         isMalePerson = compose(isMale, getGender);
+
+     var males = people.filter(isMale),
+         females = people.filter(isFemale);
+
+     // Other convention
+     var isStarred = compose(
+         curry(equals)(true),
+         curry(getter)(false, 'starred')
+     );
+
+     var favoritePeople = people.filter(isStarred);
+   #+END_SRC
+
+** Deep Getter
+   One of the strong points of Functional Programming is avoiding *null
+   pointer exceptions* and this happens often with objects.
+
+   Let's say we have a deep object
+
+   #+BEGIN_SRC javascript
+     var deepObject = {
+         a: {
+             b: {
+                 c: 1
+             },
+             d: 2
+         },
+         e: 3
+     };
+   #+END_SRC
+
+   How do we get the value of *c* ? We can try =deepObject.a.b.c= or
+   =deepObject['a']['b']['c']=. Either is the object didn't have =a= or
+   =b=, you would get a undefined exception there.
+
+   So how do we gracefully handle that?
+
+*** Composing *getter*'s
+    With our friend *getter*, we can safely default to *null*.
+
+    #+BEGIN_SRC javascript
+      var safeGet = curry(getter)(null);
+
+      var getC = composes(
+          safeGet('c'),
+          safeGet('b'),
+          safeGet('a')
+      );
+
+      getC(deepObject); // :: 1
+      deepObject.a.b.c;
+
+      var getIncorrectC = composes(
+          safeGet('c'),
+          safeGet('bx')
+          safeGet('b')
+          safeGet('a')
+      );
+
+      getIncorrectC(deepObject); // :: null
+      // deepObject.a.b.bx.c // :: undefined type error
+    #+END_SRC
+
+    This is what known as *lenses*, getters with composition. This
+    example is somewhat contrived but you can imagine the scenarios.
+
+** Methodology Unchained
+   So we return to method chaining, I challenge you to method chain the
+   pipeline shown.
+
+   #+BEGIN_SRC javascript
+     var currentDate = new Date(), // Obtained somewhere
+         addLastModifiedDate = setter('lastModifiedDate', currentDate);
+
+     var csrfToken = '1234abcd', // Somewhere in the DOM maybe?
+         addCsrfToken = setter('csrfToken', currentDate);
+
+     var removeEmptyFields = function (entity) {
+         for (var key in entity) {
+             if (entity.hasOwnProperty(key)) {
+                 if (!entity[key]) {
+                     delete entity[key];
+                 }
+             }
+         }
+
+         return entity;
+     };
+
+     var serializeToJson = function (entity) { return JSON.stringify(entity); };
+
+     var processEntity = composes( // Now turn this into a method chain
+         serializeToJson,
+         addCsrfToken,
+         removeEmptyFields,
+         addLastModifiedDate
+     );
+   #+END_SRC
+
+** So Much More
+   I can go on and on if I have to but that's it for now.
+
+* Closing Words On Functions
+  I like functions because they are *lightweight* and easy to mix and
+  match according to my needs.
+
+  What we've done is just start from simple atomic functions and build
+  them with higher order functions. I think this is the simplest way of
+  writing code, bottom to top, input and output, and fun.
+
+  I know it is not easy, but it is simpler and fun.
+
+* So What Did We Learn
+  If you learned anything, I want you to learn just this, not *compose*,
+  not *curry* but to *respect the function*. It is small but think about
+  what we constructed from ground up and what else we can craft with
+  what we have.
+
+* Questions?
+  Hopefully no headaches.
+
+* Shameless Plug
+  If you like what you see, please join the following Facebook groups
+
+  - FP User Group
+  - Philippine Emacs User Group
+
+  We are a small group but we'd love to have people join our motley crew
+  to engage and learn more about this fascinating paradigm.
+
+* Thanks For Your Time
