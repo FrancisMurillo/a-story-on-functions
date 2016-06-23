@@ -770,8 +770,8 @@ deepObject.a.b.c;
 
 var getIncorrectC = composes(
     safeGet('c'),
-    safeGet('bx')
-    safeGet('b')
+    safeGet('bx'),
+    safeGet('b'),
     safeGet('a')
 );
 
